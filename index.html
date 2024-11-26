@@ -1,166 +1,87 @@
-<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OpenTemp</title>
+    <title>Text to Binary Converter</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"></link>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@400;700&display=swap');
+
         body {
-            margin: 0;
-            padding: 0;
-            background: linear-gradient(to bottom, #88C3EC, #0099BC);
-            overflow: visible;
-            font-family: sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            position: relative;
+            font-family: 'Source Code Pro', monospace;
         }
 
-        .clouds {
-            position: absolute;
+        .matrix {
+            position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background-image: url('https://www.vecteezy.com/vector-art/138079-vector-clouds-icon-collection');
-            background-size: cover;
-            animation: moveClouds 20s linear infinite;
+            background: black;
+            overflow: hidden;
+            z-index: -1;
         }
 
-        .island {
-            background-color: rgba(255, 255, 255, 0.9);
-            border-radius: 15px;
-            padding: 40px;
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
-            backdrop-filter: blur(10px);
-            width: 300px;
-            max-width: 90%;
-            position: relative;
+        .matrix span {
+            color: #00ff00;
+            font-size: 20px;
+            font-weight: bold;
+            display: block;
+            position: absolute;
+            top: 0;
+            animation: fall linear infinite;
         }
 
-        h1 {
-            text-align: center;
-            padding: 10px 0;
-            font-size: 2em;
-            color: #333;
-        }
-
-        input, select {
-            width: 100%;
-            padding: 10px;
-            margin: 10px 0;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            box-sizing: border-box;
-        }
-
-        button {
-            width: 100%;
-            padding: 10px;
-            margin: 10px 0;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            background-color: #333;
-            color: #fff;
-            cursor: pointer;
-        }
-
-        #weather-info {
-            margin-top: 20px;
-            text-align: center;
+        @keyframes fall {
+            0% {
+                top: -100%;
+            }
+            100% {
+                top: 100%;
+            }
         }
     </style>
 </head>
-<body>
-    <div class="clouds"></div>
-    <div class="island">
-        <h1>OpenTemp</h1>
-        <input type="text" id="city-input" placeholder="Enter city name">
-        <select id="unit-select">
-            <option value="celsius">Celsius</option>
-            <option value="fahrenheit">Fahrenheit</option>
-        </select>
-        <button onclick="getWeather()">Get Weather</button>
-        <div id="weather-info"></div>
+<body class="bg-black text-green-500 flex items-center justify-center min-h-screen">
+    <div class="matrix"></div>
+    <div class="text-center p-6 bg-gray-900 rounded-lg shadow-lg">
+        <h1 class="text-3xl font-bold mb-4">Text to Binary Converter</h1>
+        <textarea id="textInput" class="w-full p-2 mb-4 bg-gray-800 text-green-500 border border-green-500 rounded" rows="5" placeholder="Enter text here..."></textarea>
+        <button id="convertButton" class="w-full p-2 bg-green-500 text-black font-bold rounded">Convert to Binary</button>
+        <textarea id="binaryOutput" class="w-full p-2 mt-4 bg-gray-800 text-green-500 border border-green-500 rounded" rows="5" placeholder="Binary output..." readonly></textarea>
     </div>
 
     <script>
-        async function getWeather() {
-            const cityInput = document.getElementById('city-input');
-            const unitSelect = document.getElementById('unit-select');
-            const weatherInfo = document.getElementById('weather-info');
-            const city = cityInput.value;
-            const unit = unitSelect.value;
+        const textInput = document.getElementById('textInput');
+        const binaryOutput = document.getElementById('binaryOutput');
+        const convertButton = document.getElementById('convertButton');
 
-            if (!city) {
-                alert('Please enter a city name');
-                return;
+        convertButton.addEventListener('click', () => {
+            const text = textInput.value;
+            let binary = '';
+            for (let i = 0; i < text.length; i++) {
+                binary += text[i].charCodeAt(0).toString(2) + ' ';
             }
+            binaryOutput.value = binary.trim();
+        });
 
-            try {
-
-                const locationResponse = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}`);
-                const locationData = await locationResponse.json();
-
-                if (locationData.results.length === 0) {
-                    weatherInfo.textContent = 'City not found';
-                    return;
-                }
-
-                const latitude = locationData.results[0].latitude;
-                const longitude = locationData.results[0].longitude;
-
-
-                const weatherResponse = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current_weather=true`);
-                const weatherData = await weatherResponse.json();
-
-
-                let temperature = weatherData.current_weather.temperature;
-                const description = weatherData.current_weather.weathercode;
-
-                if (unit === "fahrenheit") {
-                    temperature = (temperature * 9/5) + 32;
-                }
-
-                const weatherDescriptions = {
-                    0: "Clear sky",
-                    1: "Mainly clear",
-                    2: "Partly cloudy",
-                    3: "Overcast",
-                    45: "Fog",
-                    48: "Depositing rime fog",
-                    51: "Light drizzle",
-                    53: "Moderate drizzle",
-                    55: "Dense drizzle",
-                    56: "Light freezing drizzle",
-                    57: "Dense freezing drizzle",
-                    61: "Slight rain",
-                    63: "Moderate rain",
-                    65: "Heavy rain",
-                    66: "Light freezing rain",
-                    67: "Heavy freezing rain",
-                    71: "Slight snow fall",
-                    73: "Moderate snow fall",
-                    75: "Heavy snow fall",
-                    77: "Snow grains",
-                    80: "Slight rain showers",
-                    81: "Moderate rain showers",
-                    82: "Violent rain showers",
-                    85: "Slight snow showers",
-                    86: "Heavy snow showers",
-                    95: "Thunderstorm",
-                    96: "Thunderstorm with slight hail",
-                    99: "Thunderstorm with heavy hail"
-                };
-
-                weatherInfo.textContent = `${temperature}°${unit.toUpperCase()} - ${weatherDescriptions[description]}`;
-            } catch (error) {
-                console.error('Error fetching weather data:', error);
-                weatherInfo.textContent = 'Error fetching weather data. Please try again later.';
-            }
+        const matrix = document.querySelector('.matrix');
+        const matrixColumns = Math.floor(window.innerWidth / 20);
+        for (let i = 0; i < matrixColumns; i++) {
+            const span = document.createElement('span');
+            span.style.left = `${i * 20}px`;
+            span.style.animationDuration = `${Math.random() * 10 + 5}s`;
+            span.textContent = '0';
+            matrix.appendChild(span);
         }
+
+        setInterval(() => {
+            const spans = document.querySelectorAll('.matrix span');
+            spans.forEach(span => {
+                span.textContent = Math.random() > 0.5 ? '0' : '1';
+            });
+        }, 100);
     </script>
 </body>
 </html>
